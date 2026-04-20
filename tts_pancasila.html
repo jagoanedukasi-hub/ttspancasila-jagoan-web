@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>TTS Pancasila</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:linear-gradient(135deg,#e8f4fd 0%,#fef9e7 100%);min-height:100vh;padding:16px}
+  .container{max-width:680px;margin:0 auto;background:#fff;border-radius:20px;padding:20px;box-shadow:0 4px 32px rgba(0,0,0,0.10)}
+  header{text-align:center;margin-bottom:16px}
+  header h1{font-size:22px;font-weight:700;color:#1e3a5f}
+  header p{font-size:12px;color:#6b7280;margin-top:2px}
+  .garuda{font-size:32px;margin-bottom:4px}
+  .nama-box{display:flex;gap:8px;align-items:center;margin-bottom:16px;background:#f0f9ff;border-radius:10px;padding:10px 14px;border:1.5px solid #bae6fd}
+  .nama-box label{font-size:13px;font-weight:700;color:#0369a1;white-space:nowrap}
+  .nama-box input{flex:1;padding:7px 10px;border:1.5px solid #93c5fd;border-radius:8px;font-size:14px;outline:none;background:#fff}
+  .nama-box input:focus{border-color:#2563eb}
+  .grid-wrap{overflow-x:auto;margin-bottom:18px;display:flex;justify-content:center}
+  .tts-grid{display:inline-grid;gap:3px;padding:4px}
+  .cell{width:36px;height:36px;border-radius:5px;display:flex;align-items:center;justify-content:center;position:relative}
+  .cell.empty{background:transparent}
+  .cell.active{background:#f8fafc;border:1.5px solid #cbd5e1}
+  .cell.hl{background:#dbeafe;border-color:#60a5fa}
+  .cell.correct{background:#dcfce7!important;border-color:#22c55e!important}
+  .cell.wrong{background:#fee2e2!important;border-color:#ef4444!important}
+  .num-badge{position:absolute;top:2px;left:3px;font-size:8px;font-weight:800;color:#94a3b8;pointer-events:none;line-height:1}
+  .cell input{width:100%;height:100%;border:none;background:transparent;text-align:center;font-size:15px;font-weight:800;text-transform:uppercase;color:#1e293b;outline:none;caret-color:transparent;cursor:pointer}
+  .questions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+  @media(max-width:480px){.questions{grid-template-columns:1fr}}
+  .q-section h3{font-size:11px;font-weight:800;color:#475569;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px;padding-bottom:4px;border-bottom:2.5px solid #e2e8f0}
+  .q-item{font-size:12px;color:#374151;padding:5px 4px;border-bottom:0.5px solid #f1f5f9;cursor:pointer;display:flex;gap:5px;align-items:flex-start;border-radius:5px;transition:background .1s}
+  .q-item:hover{background:#f0f9ff;color:#2563eb}
+  .q-item.active-q{background:#eff6ff;color:#2563eb;font-weight:700}
+  .q-num{font-weight:800;min-width:20px;color:#94a3b8}
+  .q-item.active-q .q-num{color:#2563eb}
+  .btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:14px}
+  button{padding:9px 24px;border-radius:10px;border:none;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s}
+  .btn-periksa{background:#2563eb;color:#fff;box-shadow:0 2px 8px rgba(37,99,235,0.3)}
+  .btn-periksa:hover{background:#1d4ed8;transform:translateY(-1px)}
+  .btn-reset{background:#f1f5f9;color:#64748b}
+  .btn-reset:hover{background:#e2e8f0}
+  .result{padding:12px 18px;border-radius:12px;margin-bottom:14px;display:none;text-align:center;font-weight:700;font-size:14px}
+  .result.show{display:block;animation:pop .3s ease}
+  .result.ok{background:#dcfce7;color:#166534;border:2px solid #22c55e}
+  .result.pt{background:#fef9c3;color:#854d0e;border:2px solid #eab308}
+  @keyframes pop{0%{transform:scale(0.95);opacity:0}100%{transform:scale(1);opacity:1}}
+  .score-bar{margin-top:8px;height:8px;border-radius:4px;background:#d1d5db;overflow:hidden}
+  .score-fill{height:100%;border-radius:4px;background:#16a34a;transition:width .7s ease}
+  footer{text-align:center;font-size:11px;color:#94a3b8;margin-top:12px;padding-top:12px;border-top:1px solid #f1f5f9}
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="garuda">🦅</div>
+    <h1>TTS Pancasila</h1>
+    <p>5 Mendatar · 5 Menurun · Isi semua kotak dengan benar!</p>
+  </header>
+  <div class="nama-box">
+    <label>👤 Nama:</label>
+    <input type="text" id="nama" placeholder="Tulis namamu di sini..." autocomplete="off">
+  </div>
+  <div class="grid-wrap">
+    <div class="tts-grid" id="grid"></div>
+  </div>
+  <div class="result" id="result"></div>
+  <div class="btns">
+    <button class="btn-periksa" onclick="periksa()">✔ Periksa Jawaban</button>
+    <button class="btn-reset" onclick="resetAll()">↺ Ulangi</button>
+  </div>
+  <div class="questions">
+    <div class="q-section">
+      <h3>→ Mendatar</h3>
+      <div id="across-list"></div>
+    </div>
+    <div class="q-section">
+      <h3>↓ Menurun</h3>
+      <div id="down-list"></div>
+    </div>
+  </div>
+  <footer>TTS Pancasila · Kelas SD · Selamat belajar! 🌟</footer>
+</div>
+<script>
+/*
+LAYOUT TERVERIFIKASI (10x10):
+Mendatar:
+ 1. MUSYAWARAH r0,c0-c9  → M(0)U(1)S(2)Y(3)A(4)W(5)A(6)R(7)A(8)H(9)
+ 3. PERSATUAN  r4,c0-c8  → P(0)E(1)R(2)S(3)A(4)T(5)U(6)A(7)N(8)
+ 5. MEMBANTU   r6,c2-c9  → M(2)E(3)M(4)B(5)A(6)N(7)T(8)U(9)
+ 7. RUKUN      r8,c2-c6  → R(2)U(3)K(4)U(5)N(6)
+ 9. BINTANG    r9,c0-c6  → B(0)I(1)N(2)T(3)A(4)N(5)G(6)
+
+Menurun:
+ 2. SATU  c2,r0-r3: S(r0)=MUSYAWARAH[2]✓, A(r1), T(r2), U(r3)
+ 4. RANTAI c7,r0-r5: R(r0)=MUSYAWARAH[7]✓, A(r1), N(r2), T(r3), A(r4)=PERSATUAN[7]✓, I(r5)
+ 6. ADIL  c4,r0-r3: A(r0)=MUSYAWARAH[4]✓, D(r1), I(r2), L(r3)
+ 8. EMPAT c1,r4-r8: E(r4)=PERSATUAN[1]✓, M(r5), P(r6)[free], A(r7)[free], T(r8)[free]
+10. TIGA  c8,r6-r9: T(r6)=MEMBANTU[6]✓, I(r7)[free], G(r8)[free], A(r9)[free]
+*/
+const answers={
+  1:{word:"MUSYAWARAH",dir:"across",row:0,col:0,soal:"Keputusan bersama sebaiknya diambil dengan cara …"},
+  3:{word:"PERSATUAN",dir:"across",row:4,col:0,soal:"Sila ketiga mengajarkan kita menjaga … bangsa"},
+  5:{word:"MEMBANTU",dir:"across",row:6,col:2,soal:"Jika ada teman kesulitan kita harus saling ..."},
+  7:{word:"RUKUN",dir:"across",row:8,col:2,soal:"Kita harus hidup … agar tidak terjadi perpecahan"},
+  9:{word:"BINTANG",dir:"across",row:9,col:0,soal:"Lambang sila pertama adalah …"},
+  2:{word:"SATU",dir:"down",row:0,col:2,soal:"Kegiatan berdoa sebelum belajar mencerminkan pengamalan sila ke..."},
+  4:{word:"RANTAI",dir:"down",row:0,col:7,soal:"Sila ke-2 Pancasila dilambangkan dengan"},
+  6:{word:"ADIL",dir:"down",row:0,col:4,soal:"Sila ke-5 bermakna setiap warga negara berhak mendapat perlakuan yang ..."},
+  8:{word:"EMPAT",dir:"down",row:4,col:1,soal:"Pemilihan ketua kelas adalah penerapan sila ke ..."},
+  10:{word:"TIGA",dir:"down",row:6,col:8,soal:"Membantu ibu membersihkan rumah adalah contoh penerapan sila ke ..."}
+};
+
+const ROWS=10,COLS=10;
+let cellMap={},wordCells={},activeNum=null,activeDir=null;
+
+function buildMap(){
+  Object.entries(answers).forEach(([num,{word,dir,row,col}])=>{
+    wordCells[num]=[];
+    for(let i=0;i<word.length;i++){
+      let r=row,c=col;
+      if(dir==="across")c+=i;else r+=i;
+      const key=r+","+c;
+      if(!cellMap[key])cellMap[key]={nums:[],answer:{}};
+      cellMap[key].nums.push({num:parseInt(num),dir,pos:i});
+      cellMap[key].answer[dir]=word[i];
+      wordCells[num].push(key);
+    }
+  });
+}
+
+function renderGrid(){
+  const g=document.getElementById("grid");
+  g.style.gridTemplateColumns=`repeat(${COLS},36px)`;
+  g.style.gridTemplateRows=`repeat(${ROWS},36px)`;
+  g.innerHTML="";
+  for(let r=0;r<ROWS;r++){
+    for(let c=0;c<COLS;c++){
+      const div=document.createElement("div");
+      const key=r+","+c;
+      if(cellMap[key]){
+        div.className="cell active";
+        div.id="cell-"+r+"-"+c;
+        const starts=cellMap[key].nums.filter(n=>n.pos===0).sort((a,b)=>a.num-b.num);
+        if(starts.length){
+          const badge=document.createElement("span");
+          badge.className="num-badge";
+          badge.textContent=starts[0].num;
+          div.appendChild(badge);
+        }
+        const inp=document.createElement("input");
+        inp.type="text";inp.maxLength=1;inp.inputMode="text";
+        inp.setAttribute("data-key",key);
+        inp.addEventListener("focus",()=>highlightWord(key));
+        inp.addEventListener("input",e=>handleInput(e,r,c));
+        inp.addEventListener("keydown",e=>handleKey(e,r,c));
+        div.appendChild(inp);
+      }else{
+        div.className="cell empty";
+      }
+      g.appendChild(div);
+    }
+  }
+}
+
+function clearHL(){document.querySelectorAll(".cell.hl").forEach(el=>el.classList.remove("hl"));}
+
+function highlightWord(key){
+  clearHL();
+  const info=cellMap[key];if(!info)return;
+  const entry=info.nums[0];
+  activeNum=entry.num;activeDir=entry.dir;
+  wordCells[activeNum].forEach(k=>{
+    const [r,c]=k.split(",").map(Number);
+    const cell=document.getElementById("cell-"+r+"-"+c);
+    if(cell)cell.classList.add("hl");
+  });
+  document.querySelectorAll(".q-item").forEach(el=>el.classList.remove("active-q"));
+  const qa=document.querySelector(`.q-item[data-num="${activeNum}"][data-dir="${activeDir}"]`);
+  if(qa){qa.classList.add("active-q");qa.scrollIntoView({block:"nearest"});}
+}
+
+function handleInput(e,r,c){
+  const v=e.target.value.toUpperCase().replace(/[^A-Z]/g,"");
+  e.target.value=v;
+  if(v)moveNext(r,c);
+}
+
+function handleKey(e,r,c){
+  if(e.key==="Backspace"){const i=document.querySelector(`input[data-key="${r},${c}"]`);if(i&&i.value==="")movePrev(r,c);}
+  if(e.key==="ArrowRight")moveToCell(r,c+1);
+  if(e.key==="ArrowLeft")moveToCell(r,c-1);
+  if(e.key==="ArrowDown")moveToCell(r+1,c);
+  if(e.key==="ArrowUp")moveToCell(r-1,c);
+}
+function moveNext(r,c){if(activeDir==="across")moveToCell(r,c+1);else moveToCell(r+1,c);}
+function movePrev(r,c){if(activeDir==="across")moveToCell(r,c-1);else moveToCell(r-1,c);}
+function moveToCell(r,c){const i=document.querySelector(`input[data-key="${r},${c}"]`);if(i)i.focus();}
+
+function renderQuestions(){
+  const al=document.getElementById("across-list"),dl=document.getElementById("down-list");
+  al.innerHTML="";dl.innerHTML="";
+  Object.entries(answers).sort((a,b)=>parseInt(a[0])-parseInt(b[0])).forEach(([num,{dir,soal}])=>{
+    const list=dir==="across"?al:dl;
+    const d=document.createElement("div");
+    d.className="q-item";d.setAttribute("data-num",num);d.setAttribute("data-dir",dir);
+    d.innerHTML=`<span class="q-num">${num}.</span><span>${soal}</span>`;
+    d.onclick=()=>{
+      activeNum=parseInt(num);activeDir=dir;
+      const inp=document.querySelector(`input[data-key="${wordCells[num][0]}"]`);
+      if(inp)inp.focus();
+    };
+    list.appendChild(d);
+  });
+}
+
+function periksa(){
+  const nama=document.getElementById("nama").value.trim();
+  if(!nama){alert("Tulis nama kamu dulu ya! 😊");document.getElementById("nama").focus();return;}
+  let benar=0,total=0;
+  Object.entries(answers).forEach(([num,{word}])=>{
+    wordCells[num].forEach((key,i)=>{
+      const inp=document.querySelector(`input[data-key="${key}"]`);
+      const cell=inp&&inp.parentElement;
+      if(!inp)return;
+      total++;
+      cell.classList.remove("hl");
+      if(inp.value.toUpperCase()===word[i]){benar++;cell.classList.add("correct");cell.classList.remove("wrong");}
+      else{cell.classList.add("wrong");cell.classList.remove("correct");}
+    });
+  });
+  const pct=Math.round(benar/total*100);
+  const res=document.getElementById("result");
+  res.className="result show "+(pct===100?"ok":"pt");
+  if(pct===100){
+    res.innerHTML=`<div>Selamat, <strong>${nama}</strong>! Semua jawaban benar! 🎉🌟</div><div class="score-bar"><div class="score-fill" style="width:100%"></div></div>`;
+  }else{
+    res.innerHTML=`<div><strong>${nama}</strong> — Skor: ${benar}/${total} huruf benar (${pct}%)</div><div style="font-size:12px;font-weight:400;margin-top:2px">Kotak merah = salah/kosong. Coba lagi! 💪</div><div class="score-bar"><div class="score-fill" style="width:${pct}%"></div></div>`;
+  }
+  res.scrollIntoView({behavior:"smooth",block:"center"});
+}
+
+function resetAll(){
+  document.querySelectorAll(".cell.active input").forEach(i=>i.value="");
+  document.querySelectorAll(".cell.active").forEach(el=>el.classList.remove("correct","wrong","hl"));
+  document.getElementById("result").className="result";
+  document.querySelectorAll(".q-item").forEach(el=>el.classList.remove("active-q"));
+}
+
+buildMap();renderGrid();renderQuestions();
+</script>
+</body>
+</html>
